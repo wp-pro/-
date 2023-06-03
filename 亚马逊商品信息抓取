@@ -1,0 +1,120 @@
+import random
+import time
+from lxml import etree
+import requests
+import csv
+import getsource
+
+class amazonSpider():
+    def __init__(self):
+        self.page = 3
+
+    def getSource(self):
+        cookies = {
+            'csm-sid': '244-0806925-3947109',
+            'x-amz-captcha-1': '1685791115820310',
+            'x-amz-captcha-2': '1ZEvvTQhEICyVR4lcjAn9g==',
+            'session-id': '134-2773890-2536015',
+            'session-id-time': '2082787201l',
+            'i18n-prefs': 'USD',
+            'skin': 'noskin',
+            'ubid-main': '134-9567538-5958409',
+            'sp-cdn': '"L5Z9:SG"',
+            'session-token': 'ofSalmcd6VDAtwBEwEpW5MeIeMYMaYzoOqvOIQ/cA1mqEaYYoGc5RTKu5AvkkLM7reso+yknbsMEigQ73V+XBOAOYxayvq7RqIcTSfhzlRwo/mEV3zwCP76+xXpOqPuctmTVsjw8BT6EW97fen9P4xRJTkqEjcIjKuZfoNGB43UreJ3U1ZIvyPOPD4/dsd+8HWSRrviPZ1UGAMrMrPIDAJWTvoesf6raq2ZxYls6Ggk=',
+            'lc-main': 'en_US',
+            'csm-hit': 'tb:SWS4YS1W74J49PA6PYDM+sa-J46MJ8R1NYRBNT7NJHMR-BCBVM27V200F8K6BN82R|1685784240653&t:1685784240653&adb:adblk_no',
+        }
+
+        headers = {
+            'authority': 'www.amazon.com',
+            'accept': 'text/html,*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'cache-control': 'no-cache',
+            'content-type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            # 'cookie': 'csm-sid=244-0806925-3947109; x-amz-captcha-1=1685791115820310; x-amz-captcha-2=1ZEvvTQhEICyVR4lcjAn9g==; session-id=134-2773890-2536015; session-id-time=2082787201l; i18n-prefs=USD; skin=noskin; ubid-main=134-9567538-5958409; sp-cdn="L5Z9:SG"; session-token=ofSalmcd6VDAtwBEwEpW5MeIeMYMaYzoOqvOIQ/cA1mqEaYYoGc5RTKu5AvkkLM7reso+yknbsMEigQ73V+XBOAOYxayvq7RqIcTSfhzlRwo/mEV3zwCP76+xXpOqPuctmTVsjw8BT6EW97fen9P4xRJTkqEjcIjKuZfoNGB43UreJ3U1ZIvyPOPD4/dsd+8HWSRrviPZ1UGAMrMrPIDAJWTvoesf6raq2ZxYls6Ggk=; lc-main=en_US; csm-hit=tb:SWS4YS1W74J49PA6PYDM+sa-J46MJ8R1NYRBNT7NJHMR-BCBVM27V200F8K6BN82R|1685784240653&t:1685784240653&adb:adblk_no',
+            'device-memory': '8',
+            'downlink': '9.45',
+            'dpr': '1.5',
+            'ect': '4g',
+            'origin': 'https://www.amazon.com',
+            'pragma': 'no-cache',
+            'referer': f'https://www.amazon.com/Ching-Book-Changes-Bollingen-General/product-reviews/069109750X/ref=cm_cr_getr_d_paging_btm_next_{self.page}?ie=UTF8&reviewerType=all_reviews&pageNumber={self.page}',
+            'rtt': '250',
+            'sec-ch-device-memory': '8',
+            'sec-ch-dpr': '1.5',
+            'sec-ch-ua': '"Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-ch-ua-platform-version': '"10.0.0"',
+            'sec-ch-viewport-width': '828',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+            'viewport-width': '828',
+            'x-requested-with': 'XMLHttpRequest',
+        }
+
+        data = {
+            'sortBy': '',
+            'reviewerType': 'all_reviews',
+            'formatType': '',
+            'mediaType': '',
+            'filterByStar': '',
+            'filterByAge': '',
+            'pageNumber': f'{self.page+1}',
+            'filterByLanguage': '',
+            'filterByKeyword': '',
+            'shouldAppend': 'undefined',
+            'deviceType': 'desktop',
+            'canShowIntHeader': 'undefined',
+            'reftag': f'cm_cr_getr_d_paging_btm_next_{self.page+1}',
+            'pageSize': '10',
+            'asin': '069109750X',
+            'scope': f'reviewsAjax{self.page-1}',
+        }
+
+        response = requests.post(
+            f'https://www.amazon.it/hz/reviews-render/ajax/reviews/get/ref=cm_cr_getr_d_paging_btm_next_{self.page+1}',
+            cookies=cookies,
+            headers=headers,
+            data=data,
+        )
+        print(f'已成功获取第{self.page}页数据')
+        self.page += 1
+        return response
+
+    def getPLPage(self,response):
+
+        if response:
+            response = response.content.decode('utf-8')
+            time.sleep(1)
+            # 返回值字符串处理
+            contents = response.split('&&&')
+            for content in contents:
+                infos = content.split('","')
+                info = infos[-1].replace('"]', '').replace('\\n', '').replace('\\', '')
+                # 评论内容判断
+                if 'data-hook="review"' in info:
+                    tree = etree.HTML(info)
+                    data = {}
+                    data['username'] = tree.xpath('//span[@class="a-profile-name"]/text()')[0]  # 用户名
+                    data['point'] = tree.xpath('//span[@class="a-icon-alt"]/text()')[0]   # 评分
+                    data['date'] = tree.xpath('//span[@data-hook="review-date"]/text()')[0]   # 日期地址
+                    # data['review'] = tree.xpath('//span[@data-hook="review-title"]//text()')[0]   # 评价标题
+                    data['detail'] = ''.join(tree.xpath('//span[@data-hook="review-body"]//text()')).strip()   # 评价内容
+                    # image = tree.xpath('div[@class="review-image-tile-section"]')[0]
+                    # data['image'] = image if image else "not image"  # 图片
+                    print(data)
+                    writer.writerow(data)
+
+if __name__ == '__main__':
+    amazon = amazonSpider()
+
+    with open('data.csv','a',encoding='utf-8-sig',newline='') as f:
+        writer = csv.DictWriter(f,fieldnames=['username','point','date','detail'])
+        writer.writeheader()
+        while True:
+            response = amazon.getSource()
+            time.sleep(random.randint(5,8))
+            amazon.getPLPage(response)
